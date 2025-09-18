@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Cajas por Región</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Variables de color */
+        :root {
+            --primary-color: #4B6CB7;
+            --primary-dark: #3b5a9a;
+            --secondary-color: #2ecc71;
+            --secondary-dark: #27ae60;
+            --danger-color: #e74c3c;
+            --danger-dark: #c0392b;
+            --bg-light: #f4f6f9;
+            --bg-card: #ffffff;
+            --text-dark: #333;
+            --text-muted: #777;
+            --border-color: #e0e0e0;
+        }
+
+        /* Estilos generales */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .app-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .panel {
+            background-color: var(--bg-card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 25px;
+        }
+
+        .panel:hover {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 600;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        /* Formularios y controles */
+        label {
+            font-weight: 500;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+            display: block;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            font-size: 14px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 5px rgba(75, 108, 183, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        button:disabled {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .assign-btn {
+            background-color: var(--secondary-color);
+        }
+
+        .assign-btn:hover {
+            background-color: var(--secondary-dark);
+        }
+
+        /* Tabla de stock y asignaciones */
+        .table-container {
+            overflow-x: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: var(--bg-card);
+            border-radius: 10px;
+            overflow: hidden;
+            min-width: 600px; /* Asegura que la tabla no se colapse */
+        }
+        
+        th,
+        td {
+            border: 1px solid var(--border-color);
+            padding: 12px 15px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        td.center-text {
+            font-weight: 500;
+        }
+
+        .editable {
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .editable:hover {
+            background-color: #d1e3ff;
+        }
+
+        /* Estilos de la tabla de asignaciones */
+        #asignaciones-table th {
+            background-color: #d1e3ff;
+            color: var(--primary-color);
+        }
+
+        #asignaciones-table th[colspan] {
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1.1em;
+        }
+
+        #asignaciones-table td {
+            font-weight: bold;
+        }
+
+        #total-row {
+            font-weight: bold;
+            background-color: #f4f4f4;
+        }
+
+        #total-row td {
+            background-color: var(--bg-light);
+            border-top: 2px solid var(--primary-color);
+        }
+
+        /* Sección de controles de tabla */
+        .controls-panel {
+            background-color: var(--bg-light);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .control-group {
+            flex-grow: 1;
+            min-width: 200px;
+        }
+        
+        .control-group.full-width {
+            flex-basis: 100%;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+        }
+
+        .filter-buttons button {
+            width: auto;
+            padding: 8px 15px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .user-actions button {
+            width: auto;
+            padding: 5px 10px;
+            font-size: 12px;
+            margin: 2px;
+        }
+
+        /* Estilos del encabezado principal */
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .main-header .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .main-header .user-info span {
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .main-header .user-info #logout-btn {
+            background-color: var(--danger-color);
+            border-radius: 5px;
+            font-weight: 500;
+            padding: 8px 12px;
+            width: auto;
+            transition: background-color 0.3s;
+        }
+
+        .main-header .user-info #logout-btn:hover {
+            background-color: var(--danger-dark);
+        }
+
+        /* login screen */
+        #login-screen {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        
+        /* Notificaciones */
+        #notifications {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .notification {
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: opacity 0.5s ease;
+        }
+        .notification.success {
+            background-color: var(--secondary-color);
+        }
+        .notification.error {
+            background-color: var(--danger-color);
+        }
+        .notification.warning {
+            background-color: #f39c12;
+        }
+        
+        /* Estilos responsivos para móvil */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            .main-header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+            }
+            .main-header .user-info {
+                flex-direction: column;
+                align-items: flex-start;
+                width: 100%;
+            }
+            .panel {
+                padding: 15px;
+            }
+            .controls-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-buttons {
+                flex-direction: column;
+                gap: 5px;
+            }
+            button,
+            input,
+            select {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            /* --- CAMBIOS APLICADOS AQUÍ --- */
+            /* En pantallas pequeñas, las tablas se desplazarán horizontalmente */
+            .table-container {
+                overflow-x: auto;
+            }
+
+            /* Asegura que la tabla de asignaciones tenga un ancho mínimo para habilitar el scroll */
+            #asignaciones-table {
+                min-width: 700px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="login-screen">
+        <h2>Iniciar Sesión</h2>
+        <label for="username">Usuario:</label>
+        <input type="text" id="username" placeholder="Usuario">
+        <label for="password">Contraseña:</label>
+        <input type="password" id="password" placeholder="Contraseña">
+        <button id="login-btn">Entrar</button>
+    </div>
+
+    <div id="main-app" class="hidden">
+        <div class="main-header">
+            <div class="user-info">
+                <span>Usuario: <b id="current-user-name"></b></span>
+                <select id="region-select">
+                    <option value="region_surena">Región Sureña</option>
+                    <option value="region_agro">Región Agro</option>
+                </select>
+                <button id="logout-btn"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</button>
+            </div>
+        </div>
+        
+        <div id="notifications"></div>
+
+        <div class="app-container">
+            <h1>Sistema de Gestión de Cajas por Región</h1>
+
+            <div id="gestion-stock-panel" class="panel">
+                <div id="add-panel">
+                    <h2>1. Gestión de Stock de Cajas y Fincas</h2>
+                    <label for="caja-nombre">Nombre de la caja (Ej. Marca A, B):</label>
+                    <input type="text" id="caja-nombre" placeholder="Ej. Caja de plátano">
+
+                    <label for="caja-cantidad">Cantidad inicial:</label>
+                    <input type="number" id="caja-cantidad" value="0" min="0">
+
+                    <label for="stock-fecha">Fecha del Stock:</label>
+                    <input type="date" id="stock-fecha">
+
+                    <button id="add-caja-btn" disabled><i class="fas fa-plus"></i> Agregar/Actualizar Stock de Caja</button>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+                    <label for="finca-nombre">Nombre de la Finca:</label>
+                    <input type="text" id="finca-nombre" placeholder="Ej. La Primavera">
+                    <button id="add-finca-btn" disabled><i class="fas fa-seedling"></i> Agregar Finca</button>
+
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+
+                    <h3>Stock por día</h3>
+                    <div class="table-container">
+                        <table id="stock-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Caja</th>
+                                    <th>Cantidad</th>
+                                    <th>Modificar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="asignacion-cajas-panel" class="panel">
+                <div id="assign-panel">
+                    <h2>2. Asignación de Cajas por Finca</h2>
+
+                    <label for="finca-select">Seleccionar Finca:</label>
+                    <select id="finca-select">
+                        <option value="">-- Seleccione una finca --</option>
+                    </select>
+
+                    <label for="caja-asignar-select">Seleccionar Caja:</label>
+                    <select id="caja-asignar-select">
+                        <option value="">-- Seleccione una caja --</option>
+                    </select>
+
+                    <label for="cajas-cantidad-asignar">Cantidad a asignar:</label>
+                    <input type="number" id="cajas-cantidad-asignar" min="1" value="1">
+
+                    <label for="fecha-asignacion">Fecha de asignación:</label>
+                    <input type="date" id="fecha-asignacion">
+
+                    <button id="assign-cajas-btn" class="assign-btn" disabled><i class="fas fa-box-open"></i> Asignar Cajas</button>
+                </div>
+            </div>
+
+            <div id="historial-asignaciones-panel" class="panel">
+                <h2>Historial de Asignaciones</h2>
+                <div class="controls-panel">
+                    <div class="control-group">
+                        <label for="finca-filtro">Filtrar por Finca:</label>
+                        <select id="finca-filtro">
+                            <option value="all">Todas las fincas</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="fecha-filtro-inicio">Filtrar por Rango de Fecha:</label>
+                        <div class="filter-buttons">
+                            <input type="date" id="fecha-filtro-inicio">
+                            <input type="date" id="fecha-filtro-fin">
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <button id="reset-filter-btn"><i class="fas fa-sync-alt"></i> Restablecer Filtros</button>
+                    </div>
+                    <div class="control-group full-width">
+                        <label>Mostrar/Ocultar Cajas:</label>
+                        <div id="caja-visibilidad-checks" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px;">
+                        </div>
+                    </div>
+                    <div class="control-group" style="min-width: 150px;">
+                        <label>Exportar Historial:</label>
+                        <div class="filter-buttons">
+                            <button id="export-pdf-btn"><i class="fas fa-file-pdf"></i> PDF</button>
+                            <button id="export-excel-btn"><i class="fas fa-file-excel"></i> Excel</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="asignaciones-table">
+                        <thead>
+                            <tr id="header-row">
+                                <th>Finca</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="gestion-usuarios-panel" class="panel">
+                <div id="user-management-panel">
+                    <h2>Gestión de Usuarios</h2>
+                    <label for="new-username">Nombre de Usuario:</label>
+                    <input type="text" id="new-username">
+                    <label for="new-password">Contraseña:</label>
+                    <input type="password" id="new-password">
+                    <label for="user-role">Rol de Usuario:</label>
+                    <select id="user-role">
+                        <option value="superuser">Superusuario</option>
+                        <option value="gestion_visualizacion">Gestión y Visualización</option>
+                        <option value="solo_visualizacion">Solo Visualización</option>
+                    </select>
+                    <button id="create-user-btn"><i class="fas fa-user-plus"></i> Crear Usuario</button>
+                    <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+                    <h3>Usuarios Creados</h3>
+                    <div class="table-container">
+                        <table id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Usuario</th>
+                                    <th>Rol</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/table-to-xlsx@1.0.1/dist/table-to-xlsx.min.js"></script>
+
+    <script>
+        const STORAGE_KEY = 'caja_finca_data_';
+        const USERS_STORAGE_KEY = 'caja_finca_users';
+        let currentRegion = 'region_surena';
+        let currentUser = null;
+        let users = {};
+        let data = {
+            region_surena: {
+                stock: {},
+                fincas: new Set(),
+                asignaciones: {}
+            },
+            region_agro: {
+                stock: {},
+                fincas: new Set(),
+                asignaciones: {}
+            }
+        };
+        let visibleCajas = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('login-btn').addEventListener('click', login);
+            document.getElementById('logout-btn').addEventListener('click', logout);
+            document.getElementById('add-caja-btn').addEventListener('click', agregarCaja);
+            document.getElementById('add-finca-btn').addEventListener('click', agregarFinca);
+            document.getElementById('assign-cajas-btn').addEventListener('click', asignarCajas);
+            document.getElementById('create-user-btn').addEventListener('click', createUser);
+            document.getElementById('reset-filter-btn').addEventListener('click', restablecerFiltro);
+            document.getElementById('export-pdf-btn').addEventListener('click', exportarPDF);
+            document.getElementById('export-excel-btn').addEventListener('click', exportarExcel);
+            document.getElementById('region-select').addEventListener('change', cambiarRegion);
+            document.getElementById('finca-filtro').addEventListener('change', actualizarAsignacionesTable);
+            document.getElementById('fecha-filtro-inicio').addEventListener('change', actualizarAsignacionesTable);
+            document.getElementById('fecha-filtro-fin').addEventListener('change', actualizarAsignacionesTable);
+            
+            document.getElementById('caja-nombre').addEventListener('input', validateAddCaja);
+            document.getElementById('caja-cantidad').addEventListener('input', validateAddCaja);
+            document.getElementById('stock-fecha').addEventListener('input', validateAddCaja);
+
+            document.getElementById('finca-nombre').addEventListener('input', validateAddFinca);
+
+            document.getElementById('finca-select').addEventListener('change', validateAssign);
+            document.getElementById('caja-asignar-select').addEventListener('change', validateAssign);
+            document.getElementById('cajas-cantidad-asignar').addEventListener('input', validateAssign);
+            document.getElementById('fecha-asignacion').addEventListener('input', validateAssign);
+
+            cargarDatos();
+        });
+
+        // --- FUNCIONES DE UTILIDAD Y NOTIFICACIÓN ---
+        function hashPassword(password) {
+            let hash = 0;
+            for (let i = 0; i < password.length; i++) {
+                const char = password.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash |= 0;
+            }
+            return hash.toString();
+        }
+
+        function showNotification(message, type = 'success') {
+            const notificationsContainer = document.getElementById('notifications');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<span>${message}</span>`;
+            notificationsContainer.appendChild(notification);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 500);
+            }, 4000);
+        }
+
+        // --- GESTIÓN DE DATOS ---
+        function guardarDatos() {
+            localStorage.setItem(STORAGE_KEY + currentRegion, JSON.stringify({
+                stock: data[currentRegion].stock,
+                fincas: Array.from(data[currentRegion].fincas),
+                asignaciones: data[currentRegion].asignaciones
+            }));
+            localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+        }
+
+        function cargarDatos() {
+            const usersData = localStorage.getItem(USERS_STORAGE_KEY);
+            if (usersData) {
+                users = JSON.parse(usersData);
+            } else {
+                users['Egalvez'] = { username: 'Egalvez', password: 'Sion1610', role: 'superuser' };
+                guardarDatos();
+            }
+
+            const regionData = localStorage.getItem(STORAGE_KEY + currentRegion);
+            if (regionData) {
+                const loadedData = JSON.parse(regionData);
+                data[currentRegion].stock = loadedData.stock || {};
+                data[currentRegion].fincas = new Set(loadedData.fincas || []);
+                data[currentRegion].asignaciones = loadedData.asignaciones || {};
+            } else {
+                data[currentRegion] = {
+                    stock: {},
+                    fincas: new Set(),
+                    asignaciones: {}
+                };
+            }
+
+            if (currentUser) {
+                actualizarUI();
+            }
+        }
+
+        function cambiarRegion() {
+            currentRegion = document.getElementById('region-select').value;
+            cargarDatos();
+            actualizarUI();
+        }
+
+        // --- GESTIÓN DE USUARIOS Y AUTENTICACIÓN ---
+        function login() {
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+            const user = users[usernameInput];
+            let isAuthenticated = false;
+
+            if (user) {
+                if (usernameInput === 'Egalvez' && user.password === passwordInput) {
+                    isAuthenticated = true;
+                } else if (user.password === hashPassword(passwordInput)) {
+                    isAuthenticated = true;
+                }
+            }
+
+            if (isAuthenticated) {
+                currentUser = user;
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('current-user-name').textContent = currentUser.username;
+                actualizarUI();
+                showNotification('¡Inicio de sesión exitoso!', 'success');
+            } else {
+                showNotification('Usuario o contraseña incorrectos.', 'error');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            showNotification('Sesión cerrada.', 'success');
+            location.reload();
+        }
+
+        function createUser() {
+            if (!currentUser || currentUser.role !== 'superuser') {
+                showNotification('No tienes permisos para crear usuarios.', 'error');
+                return;
+            }
+            const username = document.getElementById('new-username').value.trim();
+            const password = document.getElementById('new-password').value;
+            const role = document.getElementById('user-role').value;
+
+            if (!username || !password) {
+                showNotification('Por favor, completa los campos de usuario y contraseña.', 'error');
+                return;
+            }
+            if (users[username]) {
+                showNotification('Este nombre de usuario ya existe.', 'error');
+                return;
+            }
+
+            users[username] = { username, password: hashPassword(password), role };
+            guardarDatos();
+            updateUsersTable();
+            showNotification(`Usuario ${username} creado con rol: ${role}.`, 'success');
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-password').value = '';
+        }
+
+        function deleteUser(username) {
+            if (!currentUser || currentUser.role !== 'superuser' || username === 'Egalvez') {
+                showNotification('No tienes permisos para eliminar este usuario.', 'error');
+                return;
+            }
+            if (confirm(`¿Estás seguro de que quieres eliminar a ${username}?`)) {
+                delete users[username];
+                guardarDatos();
+                updateUsersTable();
+                showNotification(`Usuario ${username} eliminado.`, 'success');
+            }
+        }
+
+        function changePassword(username) {
+            if (!currentUser || currentUser.role !== 'superuser') {
+                showNotification('No tienes permisos para cambiar contraseñas.', 'error');
+                return;
+            }
+            const newPassword = prompt(`Ingrese la nueva contraseña para ${username}:`);
+            if (newPassword) {
+                users[username].password = hashPassword(newPassword);
+                guardarDatos();
+                updateUsersTable();
+                showNotification(`La contraseña de ${username} ha sido cambiada.`, 'success');
+            }
+        }
+        
+        // --- VALIDACIONES DE FORMULARIO ---
+        function validateAddCaja() {
+            const nombre = document.getElementById('caja-nombre').value.trim();
+            const cantidad = parseInt(document.getElementById('caja-cantidad').value);
+            const fecha = document.getElementById('stock-fecha').value;
+            const isValid = nombre && !isNaN(cantidad) && fecha;
+            document.getElementById('add-caja-btn').disabled = !isValid;
+        }
+
+        function validateAddFinca() {
+            const nombre = document.getElementById('finca-nombre').value.trim();
+            document.getElementById('add-finca-btn').disabled = !nombre;
+        }
+
+        function validateAssign() {
+            const finca = document.getElementById('finca-select').value;
+            const caja = document.getElementById('caja-asignar-select').value;
+            const cantidad = parseInt(document.getElementById('cajas-cantidad-asignar').value);
+            const fecha = document.getElementById('fecha-asignacion').value;
+            const isValid = finca && caja && !isNaN(cantidad) && cantidad > 0 && fecha;
+            document.getElementById('assign-cajas-btn').disabled = !isValid;
+        }
+        
+        // --- FUNCIONES DE LA APLICACIÓN ---
+        function agregarCaja() {
+            const nombre = document.getElementById('caja-nombre').value.trim();
+            const cantidad = parseInt(document.getElementById('caja-cantidad').value);
+            const fecha = document.getElementById('stock-fecha').value;
+            const regionStock = data[currentRegion].stock;
+
+            if (new Date(fecha) > new Date()) {
+                showNotification('La fecha no puede ser posterior a la actual.', 'error');
+                return;
+            }
+
+            if (!regionStock[fecha]) regionStock[fecha] = {};
+            regionStock[fecha][nombre] = (regionStock[fecha][nombre] || 0) + cantidad;
+            guardarDatos();
+            actualizarUI();
+            showNotification(`Stock de ${cantidad} cajas de ${nombre} agregado para la fecha ${fecha}.`, 'success');
+            document.getElementById('caja-nombre').value = '';
+            document.getElementById('caja-cantidad').value = '0';
+            document.getElementById('stock-fecha').value = '';
+        }
+
+        function agregarFinca() {
+            const nombre = document.getElementById('finca-nombre').value.trim();
+            const regionFincas = data[currentRegion].fincas;
+            if (nombre && !regionFincas.has(nombre)) {
+                regionFincas.add(nombre);
+                guardarDatos();
+                actualizarUI();
+                showNotification(`La finca ${nombre} ha sido agregada.`, 'success');
+                document.getElementById('finca-nombre').value = '';
+            } else if (regionFincas.has(nombre)) {
+                showNotification('Esta finca ya ha sido agregada a esta región.', 'warning');
+            } else {
+                showNotification('Por favor, ingrese un nombre de finca.', 'error');
+            }
+        }
+
+        function asignarCajas() {
+            const finca = document.getElementById('finca-select').value;
+            const caja = document.getElementById('caja-asignar-select').value;
+            const cantidad = parseInt(document.getElementById('cajas-cantidad-asignar').value);
+            const fecha = document.getElementById('fecha-asignacion').value;
+
+            if (new Date(fecha) > new Date()) {
+                showNotification('La fecha no puede ser posterior a la actual.', 'error');
+                return;
+            }
+
+            const regionStock = data[currentRegion].stock;
+            const regionAsignaciones = data[currentRegion].asignaciones;
+            if (!regionStock[fecha] || (regionStock[fecha][caja] || 0) < cantidad) {
+                showNotification(`Stock insuficiente de ${caja} para la fecha ${fecha}. Stock disponible: ${regionStock[fecha]?.[caja] || 0}.`, 'error');
+                return;
+            }
+            regionStock[fecha][caja] -= cantidad;
+            if (!regionAsignaciones[fecha]) regionAsignaciones[fecha] = {};
+            if (!regionAsignaciones[fecha][finca]) regionAsignaciones[fecha][finca] = {};
+            regionAsignaciones[fecha][finca][caja] = (regionAsignaciones[fecha][finca][caja] || 0) + cantidad;
+            guardarDatos();
+            actualizarUI();
+            showNotification(`Asignación de ${cantidad} cajas de ${caja} a la finca ${finca} en la fecha ${fecha} guardada.`, 'success');
+            document.getElementById('cajas-cantidad-asignar').value = '1';
+        }
+
+        function modificarStockManualmente(fecha, caja) {
+            if (!currentUser || currentUser.role === 'solo_visualizacion') {
+                showNotification('No tienes permisos para modificar el stock.', 'error');
+                return;
+            }
+            const newStock = prompt(`Ingrese la nueva cantidad para la caja "${caja}" en la fecha "${fecha}":`);
+            if (newStock !== null) {
+                const cantidad = parseInt(newStock);
+                if (!isNaN(cantidad) && cantidad >= 0) {
+                    const regionStock = data[currentRegion].stock;
+                    if (!regionStock[fecha]) regionStock[fecha] = {};
+                    regionStock[fecha][caja] = cantidad;
+                    guardarDatos();
+                    actualizarUI();
+                    showNotification(`Stock de ${caja} actualizado a ${cantidad}.`, 'success');
+                } else {
+                    showNotification('Cantidad no válida.', 'error');
+                }
+            }
+        }
+
+        function restablecerFiltro() {
+            document.getElementById('finca-filtro').value = 'all';
+            document.getElementById('fecha-filtro-inicio').value = '';
+            document.getElementById('fecha-filtro-fin').value = '';
+            const checkboxes = document.querySelectorAll('#caja-visibilidad-checks input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            toggleCajaVisibilidad();
+            actualizarAsignacionesTable();
+            showNotification('Filtros restablecidos.', 'success');
+        }
+
+        // --- GESTIÓN DE VISIBILIDAD Y PERMISOS ---
+        function togglePanelDisplay() {
+            if (!currentUser) return;
+            const isSuperuser = currentUser.role === 'superuser';
+            const isGestion = currentUser.role === 'gestion_visualizacion' || isSuperuser;
+            
+            document.getElementById('gestion-stock-panel').classList.toggle('hidden', !isGestion);
+            document.getElementById('asignacion-cajas-panel').classList.toggle('hidden', !isGestion);
+            document.getElementById('gestion-usuarios-panel').classList.toggle('hidden', !isSuperuser);
+        }
+
+        // --- ACTUALIZACIÓN DE LA INTERFAZ ---
+        function actualizarUI() {
+            if (!currentUser) return;
+            togglePanelDisplay();
+            actualizarStockTable();
+            actualizarSelects();
+            actualizarFiltros();
+            actualizarAsignacionesTable();
+            if (currentUser.role === 'superuser') {
+                updateUsersTable();
+            }
+        }
+
+        function actualizarStockTable() {
+            const tableBody = document.getElementById('stock-table').querySelector('tbody');
+            tableBody.innerHTML = '';
+            const regionStock = data[currentRegion].stock;
+            const fechas = Object.keys(regionStock).sort();
+            fechas.forEach(fecha => {
+                for (const caja in regionStock[fecha]) {
+                    const row = `<tr>
+                        <td data-label="Fecha">${fecha}</td>
+                        <td data-label="Caja">${caja}</td>
+                        <td data-label="Cantidad" class="center-text editable" onclick="editarStock(this, '${fecha}', '${caja}')">${regionStock[fecha][caja]}</td>
+                        <td data-label="Modificar" class="center-text">
+                            ${(currentUser && currentUser.role !== 'solo_visualizacion') ? `<button onclick="modificarStockManualmente('${fecha}', '${caja}')"><i class="fas fa-edit"></i> Editar</button>` : ''}
+                        </td>
+                    </tr>`;
+                    tableBody.innerHTML += row;
+                }
+            });
+        }
+
+        function editarStock(cell, fecha, caja) {
+            if (!currentUser || currentUser.role === 'solo_visualizacion') {
+                showNotification('No tienes permisos para modificar el stock.', 'error');
+                return;
+            }
+            const oldCantidad = parseInt(cell.textContent);
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = oldCantidad;
+            input.min = 0;
+            input.style.width = '100%';
+            input.style.padding = '0';
+            input.style.textAlign = 'center';
+
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+
+            input.onblur = () => {
+                const newCantidad = parseInt(input.value);
+                if (!isNaN(newCantidad) && newCantidad >= 0 && newCantidad !== oldCantidad) {
+                    const regionStock = data[currentRegion].stock;
+                    if (!regionStock[fecha]) regionStock[fecha] = {};
+                    regionStock[fecha][caja] = newCantidad;
+                    guardarDatos();
+                    showNotification(`Stock de ${caja} para ${fecha} actualizado.`, 'success');
+                }
+                actualizarStockTable();
+            };
+            input.onkeydown = (event) => {
+                if (event.key === 'Enter') {
+                    input.blur();
+                }
+            };
+        }
+
+        function updateUsersTable() {
+            const tableBody = document.getElementById('users-table').querySelector('tbody');
+            tableBody.innerHTML = '';
+            for (const username in users) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${username}</td><td>${users[username].role}</td><td class="user-actions"></td>`;
+                const actionsCell = row.querySelector('.user-actions');
+                
+                if (currentUser && currentUser.role === 'superuser' && username !== 'Egalvez') {
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.innerHTML = `<i class="fas fa-trash-alt"></i> Eliminar`;
+                    deleteBtn.addEventListener('click', () => deleteUser(username));
+                    actionsCell.appendChild(deleteBtn);
+                    
+                    const changePassBtn = document.createElement('button');
+                    changePassBtn.innerHTML = `<i class="fas fa-key"></i> Contraseña`;
+                    changePassBtn.addEventListener('click', () => changePassword(username));
+                    actionsCell.appendChild(changePassBtn);
+                }
+                tableBody.appendChild(row);
+            }
+        }
+
+        function actualizarSelects() {
+            const fincaSelect = document.getElementById('finca-select');
+            const cajaAsignarSelect = document.getElementById('caja-asignar-select');
+            fincaSelect.innerHTML = '<option value="">-- Seleccione una finca --</option>';
+            Array.from(data[currentRegion].fincas).sort().forEach(finca => {
+                const option = `<option value="${finca}">${finca}</option>`;
+                fincaSelect.innerHTML += option;
+            });
+            cajaAsignarSelect.innerHTML = '<option value="">-- Seleccione una caja --</option>';
+            const todasLasCajas = new Set();
+            for (const fecha in data[currentRegion].stock) {
+                for (const caja in data[currentRegion].stock[fecha]) {
+                    todasLasCajas.add(caja);
+                }
+            }
+            Array.from(todasLasCajas).sort().forEach(caja => {
+                const option = `<option value="${caja}">${caja}</option>`;
+                cajaAsignarSelect.innerHTML += option;
+            });
+            validateAssign();
+        }
+
+        function actualizarFiltros() {
+            const fincaFiltroSelect = document.getElementById('finca-filtro');
+            fincaFiltroSelect.innerHTML = '<option value="all">Todas las fincas</option>';
+            Array.from(data[currentRegion].fincas).sort().forEach(finca => {
+                const option = `<option value="${finca}">${finca}</option>`;
+                fincaFiltroSelect.innerHTML += option;
+            });
+
+            const cajaVisibilidadChecks = document.getElementById('caja-visibilidad-checks');
+            cajaVisibilidadChecks.innerHTML = '';
+            const todasLasCajas = new Set();
+            for (const fecha in data[currentRegion].stock) {
+                for (const caja in data[currentRegion].stock[fecha]) {
+                    todasLasCajas.add(caja);
+                }
+            }
+            visibleCajas = Array.from(todasLasCajas).sort();
+            visibleCajas.forEach(caja => {
+                const checkboxHtml = `
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" value="${caja}" checked class="caja-checkbox">
+                        ${caja}
+                    </label>
+                `;
+                cajaVisibilidadChecks.innerHTML += checkboxHtml;
+            });
+
+            document.querySelectorAll('.caja-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', toggleCajaVisibilidad);
+            });
+        }
+
+        function toggleCajaVisibilidad() {
+            const checkboxes = document.querySelectorAll('#caja-visibilidad-checks input[type="checkbox"]');
+            visibleCajas = Array.from(checkboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+            actualizarAsignacionesTable();
+        }
+
+        function actualizarAsignacionesTable() {
+            const asignacionesTable = document.getElementById('asignaciones-table');
+            const headerRow = document.getElementById('header-row');
+            const tableBody = asignacionesTable.querySelector('tbody');
+            const fincaFiltro = document.getElementById('finca-filtro').value;
+            const fechaInicio = document.getElementById('fecha-filtro-inicio').value;
+            const fechaFin = document.getElementById('fecha-filtro-fin').value;
+            const regionAsignaciones = data[currentRegion].asignaciones;
+
+            let fechas = Object.keys(regionAsignaciones).sort();
+
+            if (fechaInicio && fechaFin) {
+                fechas = fechas.filter(fecha => fecha >= fechaInicio && fecha <= fechaFin);
+            } else if (fechaInicio) {
+                fechas = fechas.filter(fecha => fecha >= fechaInicio);
+            } else if (fechaFin) {
+                fechas = fechas.filter(fecha => fecha <= fechaFin);
+            }
+
+            const fincasArray = Array.from(data[currentRegion].fincas).sort();
+            const fincasFiltradas = fincaFiltro === 'all' ? fincasArray : [fincaFiltro];
+            const todasLasCajasEnAsignaciones = new Set();
+            fechas.forEach(fecha => {
+                for (const finca in regionAsignaciones[fecha]) {
+                    for (const caja in regionAsignaciones[fecha][finca]) {
+                        todasLasCajasEnAsignaciones.add(caja);
+                    }
+                }
+            });
+            const cajasVisiblesEnTabla = visibleCajas.length > 0 ? visibleCajas.filter(caja => todasLasCajasEnAsignaciones.has(caja)) : Array.from(todasLasCajasEnAsignaciones).sort();
+
+            headerRow.innerHTML = '<th>Finca</th>';
+            fechas.forEach(fecha => {
+                headerRow.innerHTML += `<th colspan="${cajasVisiblesEnTabla.length}">${fecha}</th>`;
+            });
+            
+            const subHeaderRow = document.createElement('tr');
+            subHeaderRow.innerHTML = '<th></th>';
+            fechas.forEach(() => {
+                cajasVisiblesEnTabla.forEach(caja => {
+                    subHeaderRow.innerHTML += `<th>${caja}</th>`;
+                });
+            });
+            const thead = asignacionesTable.querySelector('thead');
+            thead.innerHTML = '';
+            thead.appendChild(headerRow);
+            thead.appendChild(subHeaderRow);
+
+            tableBody.innerHTML = '';
+            let totalesPorFecha = {};
+            fechas.forEach(fecha => {
+                totalesPorFecha[fecha] = {};
+                cajasVisiblesEnTabla.forEach(caja => {
+                    totalesPorFecha[fecha][caja] = 0;
+                });
+            });
+
+            fincasFiltradas.forEach(finca => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td data-label="Finca"><b>${finca}</b></td>`;
+                fechas.forEach(fecha => {
+                    cajasVisiblesEnTabla.forEach(caja => {
+                        const cantidad = regionAsignaciones[fecha]?.[finca]?.[caja] || 0;
+                        if (!currentUser || currentUser.role === 'solo_visualizacion') {
+                            row.innerHTML += `<td data-label="${fecha} (${caja})">${cantidad}</td>`;
+                        } else {
+                            row.innerHTML += `<td data-label="${fecha} (${caja})" class="editable" onclick="editarCantidad(this, '${fecha}', '${finca}', '${caja}', ${cantidad})">${cantidad}</td>`;
+                        }
+                        totalesPorFecha[fecha][caja] += cantidad;
+                    });
+                });
+                tableBody.appendChild(row);
+            });
+
+            const totalRow = document.createElement('tr');
+            totalRow.id = 'total-row';
+            totalRow.innerHTML = `<td data-label="Totales"><b>TOTALES</b></td>`;
+            fechas.forEach(fecha => {
+                cajasVisiblesEnTabla.forEach(caja => {
+                    totalRow.innerHTML += `<td data-label="${fecha} (${caja})">${totalesPorFecha[fecha][caja]}</td>`;
+                });
+            });
+            tableBody.appendChild(totalRow);
+        }
+
+        function editarCantidad(cell, fecha, finca, caja, oldCantidad) {
+            if (!currentUser || currentUser.role === 'solo_visualizacion') {
+                showNotification('No tienes permisos para editar las asignaciones.', 'error');
+                return;
+            }
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.value = oldCantidad;
+            input.min = 0;
+            input.style.width = '100%';
+            input.style.padding = '0';
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.onblur = () => {
+                const newCantidad = parseInt(input.value);
+                if (!isNaN(newCantidad) && newCantidad >= 0 && newCantidad !== oldCantidad) {
+                    modificarAsignacion(fecha, finca, caja, oldCantidad, newCantidad);
+                } else {
+                    cell.textContent = oldCantidad;
+                }
+            };
+            input.onkeydown = (event) => {
+                if (event.key === 'Enter') {
+                    input.blur();
+                }
+            };
+        }
+
+        function modificarAsignacion(fecha, finca, caja, oldCantidad, newCantidad) {
+            const diferencia = newCantidad - oldCantidad;
+            const regionStock = data[currentRegion].stock;
+            const regionAsignaciones = data[currentRegion].asignaciones;
+
+            if (!regionStock[fecha] || (regionStock[fecha][caja] || 0) < diferencia) {
+                showNotification(`Stock insuficiente para esta modificación. Stock actual de ${caja} para la fecha ${fecha}: ${regionStock[fecha]?.[caja] || 0}`, 'error');
+                actualizarUI();
+                return;
+            }
+
+            regionStock[fecha][caja] -= diferencia;
+
+            if (!regionAsignaciones[fecha]) regionAsignaciones[fecha] = {};
+            if (!regionAsignaciones[fecha][finca]) regionAsignaciones[fecha][finca] = {};
+            regionAsignaciones[fecha][finca][caja] = newCantidad;
+
+            if (newCantidad === 0) {
+                delete regionAsignaciones[fecha][finca][caja];
+                if (Object.keys(regionAsignaciones[fecha][finca]).length === 0) {
+                    delete regionAsignaciones[fecha][finca];
+                }
+                if (Object.keys(regionAsignaciones[fecha]).length === 0) {
+                    delete regionAsignaciones[fecha];
+                }
+            }
+
+            guardarDatos();
+            actualizarUI();
+            showNotification(`Asignación de ${caja} a ${finca} modificada a ${newCantidad}.`, 'success');
+        }
+
+        // --- FUNCIONES DE EXPORTACIÓN ---
+        function exportarExcel() {
+            if (typeof TableToExcel === 'undefined') {
+                showNotification('Error al cargar la biblioteca de Excel.', 'error');
+                return;
+            }
+            try {
+                const table = document.getElementById('asignaciones-table');
+                const filename = 'Historial_Asignaciones.xlsx';
+                TableToExcel.convert(table, {
+                    name: filename,
+                    sheet: {
+                        name: 'Historial'
+                    }
+                });
+                showNotification('Historial exportado a Excel.', 'success');
+            } catch (e) {
+                console.error("Error al exportar a Excel:", e);
+                showNotification('Ocurrió un error al exportar el archivo Excel.', 'error');
+            }
+        }
+
+        function exportarPDF() {
+            if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+                showNotification('Error al cargar la biblioteca de PDF.', 'error');
+                return;
+            }
+            try {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('landscape');
+                const table = document.getElementById('asignaciones-table');
+                
+                if (typeof doc.autoTable !== 'function') {
+                    showNotification('El plugin de autoTable para PDF no se ha cargado.', 'error');
+                    return;
+                }
+
+                doc.autoTable({
+                    html: table,
+                    startY: 20,
+                    theme: 'grid',
+                    headStyles: { fillColor: '#4B6CB7' },
+                    styles: { fontSize: 10, cellPadding: 3, halign: 'center' },
+                    didDrawPage: function (data) {
+                        doc.text("Historial de Asignaciones", 14, 15);
+                    }
+                });
+
+                doc.save('Historial_Asignaciones.pdf');
+                showNotification('Historial exportado a PDF.', 'success');
+            } catch (e) {
+                console.error("Error al exportar a PDF:", e);
+                showNotification('Ocurrió un error al exportar el archivo PDF.', 'error');
+            }
+        }
+    </script>
+</body>
+</html>
