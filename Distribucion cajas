@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de asignación de fruta | Gestión de Exportación</title> 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet"> 
+
+    <style>
+        :root {
+            --primary: #0f3460;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --bg-body: #f4f6f8;
+            --bg-card: #ffffff;
+            --text-main: #2c3e50;
+            --border-color: #ddd; /* Nueva variable para bordes */
+            --shadow-light: 0 2px 5px rgba(0,0,0,0.05);
+            --shadow-card: 0 4px 6px rgba(0,0,0,0.04);
+        } 
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            margin: 0; 
+            padding: 20px; 
+            color: var(--text-main);
+        } 
+
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            display: grid; 
+            gap: 20px; 
+        } 
+
+        /* Cabecera */
+        header { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border-left: 5px solid var(--primary);
+            box-shadow: var(--shadow-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        /* Título Actualizado */
+        header h1 { margin: 0; color: var(--primary); font-size: 1.5rem; }
+        
+        .header-controls { text-align: right; display: flex; align-items: center; gap: 15px; }
+        .date-badge { color: #666; font-weight: 500; font-size: 0.9rem; } 
+
+        /* Tarjetas */
+        .card { 
+            background: var(--bg-card); 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: var(--shadow-card); 
+            position: relative;
+        }
+        .card h3 { 
+            margin-top: 0; 
+            color: var(--primary); 
+            border-bottom: 1px solid var(--border-color); /* Usando variable */
+            padding-bottom: 15px; 
+            font-size: 1.1rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        } 
+
+        /* Inputs y Botones (MEJORA DE ESTILO) */
+        input:not([type="checkbox"]), select { 
+            width: 100%; 
+            padding: 10px; 
+            margin-bottom: 10px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            box-sizing: border-box; 
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-size: 0.95rem; /* Ligeramente más grande */
+        }
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(15, 52, 96, 0.1);
+            outline: none;
+        }
+        label { font-weight: 600; font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px; } 
+
+        button { 
+            cursor: pointer; 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: 600; 
+            transition: 0.2s; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 5px; 
+            justify-content: center;
+        }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .btn-green { background: var(--success); color: white; width: 100%; }
+        .btn-blue { background: var(--primary); color: white; width: 100%; }
+        .btn-red { background: #fee2e2; color: var(--danger); width: auto; padding: 8px 12px; }
+        .btn-outline { 
+            background: white; border: 1px solid var(--border-color); color: #555; 
+            font-size: 0.85rem; padding: 6px 12px;
+        }
+        .btn-outline:hover { background: #f0f0f0; } 
+
+        /* Filtros */
+        .filter-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #eef;
+        }
+        .filter-bar input, .filter-bar select { margin-bottom: 0; font-size: 0.9rem; } 
+
+        /* Grilla Principal */
+        .main-grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
+        
+        /* Listas y Filas Dinámicas */
+        .list-container { max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-top: 10px; }
+        .list-item { 
+            padding: 10px; border-bottom: 1px solid #eee; display: flex; 
+            justify-content: space-between; align-items: center; font-size: 0.9rem; 
+        }
+        .list-item:last-child { border-bottom: none; }
+        .list-item:nth-child(even) { background: #fafafa; } 
+
+        /* ESTILO MEJORADO PARA FILA DE ASIGNACIÓN */
+        .finca-row { 
+            display: grid; 
+            grid-template-columns: 2fr 1fr 1.5fr auto; 
+            gap: 10px; 
+            background: #ffffff; /* Fondo blanco */
+            padding: 8px 10px; /* Padding reducido */
+            border: 1px solid #eee; /* Borde más sutil */
+            border-radius: 8px; 
+            margin-bottom: 8px; 
+            align-items: center;
+        } 
+        .finca-row input, .finca-row select {
+            margin-bottom: 0;
+            padding: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* Tabla */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 15px; }
+        th { background: #f1f5f9; text-align: left; padding: 12px; color: #555; font-size: 0.8rem; text-transform: uppercase; }
+        td { padding: 12px; border-bottom: 1px solid #eee; vertical-align: top; } /* Vertical align TOP para contenido largo */
+        
+        .badge { background: #e0e7ff; color: var(--primary); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; } 
+
+        @media(max-width: 900px) {
+            .main-grid { grid-template-columns: 1fr; }
+            .finca-row { grid-template-columns: 1fr; gap: 5px; }
+            header { flex-direction: column; gap: 10px; align-items: flex-start; }
+            .header-controls { width: 100%; justify-content: space-between; }
+        }
+    </style>
+</head>
+<body> 
+
+<div class="container">
+    <header>
+        <h1><i class="fa-solid fa-leaf"></i> Sistema de asignación de fruta</h1>
+        <div class="header-controls">
+            <div class="date-badge" id="dateDisplay">--/--/----</div>
+            <div style="display:flex; gap:5px;">
+                <button class="btn-outline" onclick="backupData()" title="Descargar Respaldo"><i class="fa-solid fa-download"></i></button>
+                <button class="btn-outline" onclick="document.getElementById('fileRestore').click()" title="Cargar Respaldo"><i class="fa-solid fa-upload"></i></button>
+                <input type="file" id="fileRestore" style="display:none" accept=".json" onchange="restoreData(this)">
+            </div>
+        </div>
+    </header> 
+
+    <div class="main-grid">
+        
+        <aside>
+            <div class="card" style="margin-bottom: 20px;">
+                <h3><i class="fa-solid fa-tags"></i> Catálogo SKU</h3>
+                <label for="skuCode">Código</label>
+                <input type="text" id="skuCode" placeholder="Ej: BAN-P" required>
+                <label for="skuName">Nombre Producto</label>
+                <input type="text" id="skuName" placeholder="Ej: Banano Premium" required>
+                <label for="skuBox">Cajas Referencia (Por Contenedor)</label>
+                <input type="number" id="skuBox" placeholder="1080" min="1" pattern="[0-9]*">
+                <button class="btn-blue" onclick="addSKU()"><i class="fa-solid fa-plus"></i> Guardar SKU</button>
+                <div id="listSKU" class="list-container"></div>
+            </div> 
+
+            <div class="card">
+                <h3><i class="fa-solid fa-tractor"></i> Fincas</h3>
+                <label for="fincaInput">Nombre Finca</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" id="fincaInput" placeholder="Ej: Santa Maria" required>
+                    <button class="btn-green" style="width: auto;" onclick="addFincaDB()"><i class="fa-solid fa-check"></i></button>
+                </div>
+                <div id="listFincas" class="list-container" style="height: 150px;"></div>
+            </div>
+        </aside> 
+
+        <main>
+            <div class="card" style="border-top: 4px solid var(--success); margin-bottom: 20px;">
+                <h3><i class="fa-solid fa-clipboard-check"></i> Generar Orden de Corta</h3>
+                
+                <form id="orderForm" onsubmit="event.preventDefault(); generateOrder();">
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div><label for="ordFecha">Fecha</label><input type="date" id="ordFecha" required></div>
+                        <div><label for="selSKU">SKU</label><select id="selSKU" required></select></div>
+                        <div><label for="ordDestino">Cliente / Destino</label><input type="text" id="ordDestino" placeholder="Ej: Dole / Puerto Barrios" required></div>
+                        <div><label for="ordConts">Contenedores</label><input type="number" id="ordConts" value="1" min="1" required></div>
+                    </div> 
+
+                    <div style="background: #fcfcfc; border: 1px dashed #ccc; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <h4 style="margin:0 0 10px 0; color:#555; font-size:0.9rem;">Asignación de Fincas y Cajas</h4>
+                        <div style="font-size: 0.8rem; color: #888; margin-bottom: 5px;">* Actividad y Cajas son obligatorias por línea.</div>
+                        <div id="fincaContainer">
+                            </div>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                            <button type="button" class="btn-outline" onclick="addFincaRow()" style="width:auto; border-color:var(--success); color:var(--success);"><i class="fa-solid fa-plus"></i> Agregar Línea</button>
+                            <div style="font-size: 1.1rem; font-weight: 700;">Total: <span id="liveTotal" style="color:var(--primary)">0</span> Cajas</div>
+                        </div>
+                    </div> 
+
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="submit" class="btn-green" style="width:auto; padding: 12px 40px;">
+                            <i class="fa-solid fa-paper-plane"></i> CREAR ORDEN
+                        </button>
+                    </div>
+                </form>
+            </div> 
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; margin-bottom: 15px;">
+                    <h3><i class="fa-solid fa-history"></i> Historial de Órdenes</h3>
+                    <button class="btn-blue" style="width:auto; font-size:0.85rem;" onclick="exportExcel()">
+                        <i class="fa-solid fa-file-excel"></i> Exportar Todo
+                    </button>
+                </div> 
+
+                <div class="filter-bar">
+                    <div>
+                        <label style="font-size:0.7rem;">Desde:</label>
+                        <input type="date" id="filterStart">
+                    </div>
+                    <div>
+                        <label style="font-size:0.7rem;">Hasta:</label>
+                        <input type="date" id="filterEnd">
+                    </div>
+                    <div style="grid-column: span 2; min-width: 200px;">
+                        <label style="font-size:0.7rem;">Buscar (ID, Cliente, SKU...):</label>
+                        <input type="text" id="filterText" placeholder="Escribe para buscar...">
+                    </div>
+                    <div style="display:flex; align-items:flex-end; gap:5px;">
+                        <button class="btn-blue" onclick="filterHistory()" title="Aplicar Filtros"><i class="fa-solid fa-search"></i></button>
+                        <button class="btn-outline" onclick="clearFilters()" title="Limpiar Filtros"><i class="fa-solid fa-eraser"></i></button>
+                    </div>
+                </div> 
+
+                <div style="overflow-x: auto;">
+                    <table id="tableHistory">
+                        <thead>
+                            <tr>
+                                <th>Orden</th>
+                                <th>Detalles</th>
+                                <th>Fincas / Actividad</th>
+                                <th>Logística</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div> 
+
+<script>
+    // --- 1. GESTIÓN DE BASE DE DATOS LOCAL Y RESPALDO ---
+    const db = {
+        get: (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } },
+        set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+    }; 
+
+    function backupData() {
+        const data = {
+            fincas: db.get('my_fincas'),
+            skus: db.get('my_skus'),
+            history: db.get('my_history')
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type : 'application/json'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `Agro_Respaldo_${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    } 
+
+    function restoreData(input) {
+        const file = input.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                if(data.fincas) db.set('my_fincas', data.fincas);
+                if(data.skus) db.set('my_skus', data.skus);
+                if(data.history) db.set('my_history', data.history);
+                loadAll();
+                Swal.fire('Restaurado', 'La base de datos se ha actualizado.', 'success');
+            } catch(err) {
+                Swal.fire('Error', 'Archivo de respaldo inválido', 'error');
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
+    } 
+
+    // --- 2. INICIALIZACIÓN ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const today = new Date();
+        document.getElementById('ordFecha').valueAsDate = today;
+        document.getElementById('dateDisplay').innerText = today.toLocaleDateString();
+        
+        // Inicialización de datos de ejemplo si están vacíos
+        if(db.get('my_fincas').length === 0) db.set('my_fincas', ['Finca 1', 'Finca 2']);
+        if(db.get('my_skus').length === 0) db.set('my_skus', [{c:'BAN-P', n:'Banano Premium', b:'1080'}]); // 'b' ahora se almacena como string
+
+        loadAll();
+        // Asegurar que siempre haya al menos una fila visible
+        if(document.querySelectorAll('.finca-row').length === 0) {
+            addFincaRow(); 
+        }
+    }); 
+
+    function loadAll() {
+        renderSKUs();
+        renderFincas();
+        renderHistory();
+        updateRowSelects();
+    } 
+
+    // --- 3. FUNCIONES DE SKU ---
+    function addSKU() {
+        const c = document.getElementById('skuCode').value.trim().toUpperCase();
+        const n = document.getElementById('skuName').value.trim();
+        const b = document.getElementById('skuBox').value.trim(); // Se obtiene como string
+        
+        if(!c || !n || !b) return Swal.fire('Error', 'Complete Código, Nombre y Cajas Referencia', 'warning');
+        if(isNaN(parseInt(b)) || parseInt(b) <= 0) return Swal.fire('Error', 'Cajas Referencia debe ser un número positivo.', 'error');
+
+        let list = db.get('my_skus');
+        if(list.some(x => x.c === c)) return Swal.fire('Error', `El código SKU "${c}" ya existe.`, 'error');
+
+        // Almacenamos 'b' como string para consistencia, pero aseguramos que sea convertible a número.
+        list.push({ c, n, b }); 
+        db.set('my_skus', list);
+        
+        document.getElementById('skuCode').value = '';
+        document.getElementById('skuName').value = '';
+        document.getElementById('skuBox').value = '';
+        
+        loadAll();
+        Swal.fire({icon:'success', title:'Guardado', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+    } 
+
+    function renderSKUs() {
+        const list = db.get('my_skus');
+        const div = document.getElementById('listSKU');
+        const sel = document.getElementById('selSKU');
+        let htmlList = '';
+        let htmlSel = '<option value="" disabled selected>-- Seleccione SKU --</option>';
+
+        list.forEach((item, idx) => {
+            htmlList += `
+                <div class="list-item">
+                    <div><b>${item.c}</b> <br> <small>${item.n} (${item.b} cajas)</small></div>
+                    <button class="btn-red" onclick="delItem('my_skus', ${idx})"><i class="fa-solid fa-trash"></i></button>
+                </div>`;
+            htmlSel += `<option value="${item.c}">${item.c} - ${item.n}</option>`;
+        });
+        
+        div.innerHTML = htmlList || '<div style="padding:10px; color:#999; text-align:center">Catálogo vacío</div>';
+        
+        const currentVal = sel.value;
+        sel.innerHTML = htmlSel;
+        // Mantiene la selección actual si es válida
+        if(currentVal && list.some(x => x.c === currentVal)) sel.value = currentVal;
+    } 
+    
+    // Función de utilidad para obtener el nombre del SKU
+    function getSkuName(code) {
+        const skus = db.get('my_skus');
+        const sku = skus.find(x => x.c === code);
+        return sku ? sku.n : 'Producto Desconocido';
+    }
+
+    // --- 4. FUNCIONES DE FINCAS ---
+    function addFincaDB() {
+        const n = document.getElementById('fincaInput').value.trim();
+        if(!n) return;
+        let list = db.get('my_fincas');
+        if(list.includes(n)) return Swal.fire('Error', 'El nombre de la finca ya existe.', 'warning');
+        
+        list.push(n);
+        db.set('my_fincas', list);
+        
+        document.getElementById('fincaInput').value = '';
+        loadAll();
+        Swal.fire({icon:'success', title:'Finca guardada', toast:true, position:'top-end', showConfirmButton:false, timer:1500});
+    } 
+
+    function renderFincas() {
+        const list = db.get('my_fincas');
+        const div = document.getElementById('listFincas');
+        let html = '';
+        list.forEach((n, idx) => {
+            html += `
+                <div class="list-item">
+                    <span>${n}</span>
+                    <button class="btn-red" onclick="delItem('my_fincas', ${idx})"><i class="fa-solid fa-trash"></i></button>
+                </div>`;
+        });
+        div.innerHTML = html || '<div style="padding:10px; color:#999; text-align:center">No hay fincas registradas</div>';
+    } 
+
+    // --- 5. LÓGICA DE FILAS Y ORDEN ---
+    function updateRowSelects() {
+        const fincas = db.get('my_fincas');
+        const opts = fincas.map(f => `<option value="${f}">${f}</option>`).join('');
+        
+        document.querySelectorAll('.row-sel').forEach(s => {
+            const val = s.value;
+            s.innerHTML = '<option value="" disabled selected>Seleccione Finca</option>' + opts;
+            if(val) s.value = val;
+        });
+    } 
+
+    function addFincaRow() {
+        const d = document.createElement('div');
+        d.className = 'finca-row';
+        d.innerHTML = `
+            <select class="row-sel" required></select>
+            <input type="number" class="row-qty" placeholder="Cajas (min 1)" oninput="calcTotal()" min="1" required>
+            <input type="text" class="row-act" placeholder="Actividad (Ej: Corte Normal...)" required>
+            <button type="button" class="btn-red" onclick="this.parentElement.remove(); calcTotal();"><i class="fa-solid fa-times"></i></button>
+        `;
+        document.getElementById('fincaContainer').appendChild(d);
+        updateRowSelects();
+    } 
+
+    function calcTotal() {
+        let total = 0;
+        document.querySelectorAll('.row-qty').forEach(i => total += parseInt(i.value) || 0);
+        document.getElementById('liveTotal').innerText = total;
+        return total;
+    } 
+
+    function generateOrder() {
+        const sku = document.getElementById('selSKU').value;
+        const dest = document.getElementById('ordDestino').value.trim();
+        const fecha = document.getElementById('ordFecha').value;
+        const conts = document.getElementById('ordConts').value;
+        const total = calcTotal();
+        
+        // La validación de HTML5 se encarga de los campos 'required' del formulario principal.
+        
+        let fincas = [];
+        let errorFinca = false;
+        let errorAct = false; 
+
+        document.querySelectorAll('.finca-row').forEach(r => {
+            const n = r.querySelector('.row-sel').value;
+            const q = parseInt(r.querySelector('.row-qty').value);
+            const a = r.querySelector('.row-act').value.trim(); 
+            
+            if(q > 0) {
+                if(!n) errorFinca = true;
+                if(!a) errorAct = true;
+                if(n && a) fincas.push({n, q, a});
+            }
+        }); 
+
+        if(total <= 0) return Swal.fire('Error', 'Debe asignar al menos 1 caja.', 'error');
+        if(errorFinca) return Swal.fire('Atención', 'Hay cantidades sin Finca asignada.', 'error');
+        if(errorAct) return Swal.fire('Atención', 'El campo "Actividad" es obligatorio para las líneas con cajas.', 'error');
+        if(fincas.length === 0) return Swal.fire('Error', 'Agregue al menos una línea válida con cajas.', 'warning'); 
+
+        const order = {
+            id: Date.now().toString().slice(-6),
+            date: fecha,
+            sku, dest, total, fincas,
+            conts: conts,
+            contId: '', sealId: ''
+        }; 
+
+        let h = db.get('my_history');
+        h.push(order);
+        db.set('my_history', h);
+        
+        // Limpiar filas de asignación y añadir una nueva
+        document.getElementById('fincaContainer').innerHTML = '';
+        addFincaRow();
+        
+        // Resetear otros campos
+        document.getElementById('ordDestino').value = '';
+        document.getElementById('selSKU').selectedIndex = 0; // Vuelve a la opción "-- Seleccione SKU --"
+        
+        calcTotal(); // Resetear total visible a 0
+        loadAll(); 
+        
+        Swal.fire('Éxito', `Orden #${order.id} creada`, 'success');
+    } 
+
+    // --- 6. HISTORIAL Y FILTROS ---
+    function filterHistory() {
+        const start = document.getElementById('filterStart').value;
+        const end = document.getElementById('filterEnd').value;
+        const text = document.getElementById('filterText').value.toLowerCase();
+        
+        const data = db.get('my_history'); 
+
+        const filtered = data.filter(item => {
+            // Fecha
+            let validDate = true;
+            if (start && item.date < start) validDate = false;
+            if (end && item.date > end) validDate = false; 
+
+            // Texto (busca en ID, Cliente, SKU, Contenedor, Marchamo)
+            let validText = true;
+            if (text) {
+                // Incluye el nombre del producto en la búsqueda de texto
+                const searchStr = `${item.id} ${item.dest} ${item.sku} ${getSkuName(item.sku)} ${item.contId || ''} ${item.sealId || ''}`.toLowerCase();
+                if (!searchStr.includes(text)) validText = false;
+            } 
+
+            return validDate && validText;
+        }); 
+
+        renderHistory(filtered);
+    } 
+
+    function clearFilters() {
+        document.getElementById('filterStart').value = '';
+        document.getElementById('filterEnd').value = '';
+        document.getElementById('filterText').value = '';
+        renderHistory(); 
+    } 
+
+    function renderHistory(customList = null) {
+        let list = customList || db.get('my_history');
+        
+        // Ordenar: Mas reciente primero
+        list.sort((a, b) => new Date(b.date) - new Date(a.date) || b.id - a.id); 
+
+        const tb = document.querySelector('#tableHistory tbody');
+        tb.innerHTML = '';
+        
+        if(list.length === 0) {
+            tb.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">No se encontraron registros.</td></tr>';
+            return;
+        } 
+
+        list.forEach(o => {
+            const tr = document.createElement('tr');
+            let det = o.fincas.map(f => `<div style="margin-bottom: 5px;"><b>${f.n}</b>: ${f.q} cajas <br><small>(${f.a})</small></div>`).join('');
+            const productName = getSkuName(o.sku);
+            
+            tr.innerHTML = `
+                <td><span class="badge">#${o.id}</span><br><small>${o.date}</small></td>
+                <td><b>${o.dest}</b><br><small>SKU: ${o.sku} (${productName})</small><br>Cts: ${o.conts} | Total: <b>${o.total}</b></td>
+                <td style="font-size:0.85rem">${det}</td>
+                <td>
+                    <input type="text" placeholder="Contenedor" value="${o.contId}" onchange="upd(this, ${o.id}, 'contId')" style="font-size:0.8rem; padding:5px; margin-bottom:5px;">
+                    <input type="text" placeholder="Marchamo" value="${o.sealId}" onchange="upd(this, ${o.id}, 'sealId')" style="font-size:0.8rem; padding:5px;">
+                </td>
+                <td>
+                    <button class="btn-blue" onclick="printPDF('${o.id}')" style="padding:5px 10px; font-size:0.8rem; margin-bottom:5px;" title="Imprimir PDF"><i class="fa-solid fa-print"></i></button>
+                    <button class="btn-red" onclick="delItem('my_history', null, '${o.id}')" style="padding:5px 10px; font-size:0.8rem;" title="Eliminar Orden"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+            tb.appendChild(tr);
+        });
+    } 
+
+    // --- 7. UTILIDADES ---
+    function upd(input, id, field) {
+        let list = db.get('my_history');
+        let item = list.find(x => x.id == id);
+        if(item) {
+            item[field] = input.value;
+            db.set('my_history', list);
+            
+            // CORREGIDO: Usamos valores Hexadecimales directos en JS
+            input.style.borderColor = '#2ecc71'; // Valor de --success
+            setTimeout(() => input.style.borderColor = '#ddd', 1000); // Valor de --border-color
+        }
+    } 
+
+    function delItem(key, idx, id=null) {
+        Swal.fire({
+            title: '¿Seguro de eliminar?',
+            text: "Esta acción no se puede deshacer.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#e74c3c', // CORREGIDO: Valor de --danger
+            cancelButtonColor: '#aaa',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let list = db.get(key);
+                if(id) list = list.filter(x => x.id != id);
+                else list.splice(idx, 1);
+                db.set(key, list);
+                loadAll();
+                Swal.fire('¡Eliminado!', 'El registro ha sido borrado.', 'success');
+            }
+        });
+    } 
+
+    function printPDF(id) {
+        const o = db.get('my_history').find(x => x.id == id);
+        if(!o) return; 
+
+        const productName = getSkuName(o.sku);
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        doc.setFontSize(18); doc.setTextColor(15, 52, 96);
+        // Título actualizado en el PDF
+        doc.text("ORDEN DE CORTA - SISTEMA DE ASIGNACIÓN DE FRUTA", 14, 20); 
+        
+        doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+        doc.text(`ORDEN ID: ${o.id}`, 14, 30);
+        doc.text(`FECHA: ${o.date}`, 14, 35);
+        doc.text(`CLIENTE / DESTINO: ${o.dest}`, 14, 40);
+        doc.text(`SKU PRODUCTO: ${o.sku} (${productName})`, 14, 45);
+        
+        if(o.contId) doc.text(`CONTENEDOR ASIGNADO: ${o.contId}`, 120, 30);
+        if(o.sealId) doc.text(`MARCHAMO: ${o.sealId}`, 120, 35); 
+
+        doc.autoTable({
+            startY: 55,
+            head: [['Finca de Origen', 'Actividad / Detalle', 'Cantidad (Cajas)']],
+            body: o.fincas.map(f => [f.n, f.a, f.q]),
+            foot: [['', 'TOTAL CAJAS', o.total]],
+            theme: 'grid',
+            headStyles: { fillColor: [15, 52, 96] },
+            footStyles: { fillColor: [46, 204, 113], textColor: [255,255,255] }
+        }); 
+
+        let finalY = doc.lastAutoTable.finalY + 40;
+        if(finalY > 250) { doc.addPage(); finalY = 40; } 
+        doc.setLineWidth(0.5);
+        doc.line(20, finalY, 90, finalY); 
+        doc.text("Firma Responsable Carga", 20, finalY + 5);
+        doc.line(120, finalY, 190, finalY);
+        doc.text("Firma Piloto / Transporte", 120, finalY + 5);
+        
+        doc.save(`Orden_${o.id}.pdf`);
+    }
+    
+    function exportExcel() {
+        const list = db.get('my_history'); 
+        const ws = XLSX.utils.json_to_sheet(list.map(o => ({
+            ID: o.id, Fecha: o.date, Cliente: o.dest, SKU: o.sku, 
+            'Nombre Producto': getSkuName(o.sku), 
+            Total: o.total,
+            Contenedor: o.contId, Marchamo: o.sealId,
+            Detalle_Fincas: o.fincas.map(f=>`${f.n} (${f.a}): ${f.q}`).join('; ')
+        })));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+        XLSX.writeFile(wb, "Reporte_Asignacion_Fruta.xlsx");
+    }
+</script> 
+
+</body>
+</html>
